@@ -1,0 +1,46 @@
+import { Plugin, WorkspaceLeaf } from "obsidian";
+import { BattleTrackerSettings } from "./types";
+import { DEFAULT_SETTINGS, BattleTrackerSettingTab } from "./settings";
+import { VIEW_TYPE, BattleTrackerView } from "./view";
+
+export default class BattleTrackerPlugin extends Plugin {
+	settings: BattleTrackerSettings;
+
+	async onload() {
+		await this.loadSettings();
+
+		this.registerView(VIEW_TYPE, (leaf) => new BattleTrackerView(leaf, this));
+
+		this.addRibbonIcon("sword", "Battle Tracker", () => this.activateView());
+
+		this.addCommand({
+			id: "open-battle-tracker",
+			name: this.settings.language === "es" ? "Abrir Battle Tracker" : "Open Battle Tracker",
+			callback: () => this.activateView(),
+		});
+
+		this.addSettingTab(new BattleTrackerSettingTab(this.app, this));
+	}
+
+	async activateView() {
+		const { workspace } = this.app;
+		let leaf: WorkspaceLeaf | null = null;
+		const existing = workspace.getLeavesOfType(VIEW_TYPE);
+		if (existing.length) {
+			leaf = existing[0];
+		} else {
+			leaf = workspace.getRightLeaf(false);
+			await leaf!.setViewState({ type: VIEW_TYPE, active: true });
+		}
+		workspace.revealLeaf(leaf!);
+	}
+
+	async loadSettings() {
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		if (!this.settings.fields) this.settings.fields = DEFAULT_SETTINGS.fields;
+	}
+
+	async saveSettings() {
+		await this.saveData(this.settings);
+	}
+}
