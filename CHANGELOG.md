@@ -35,3 +35,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * `settings.ts` (Config & Setting Tab Panel)
   * `view.ts` (Battle Tracker View Panel & Combats Flow)
   * `modals.ts` (UI Popups & Choice Modals)
+
+---
+
+## [1.0.1] - 2026-05-25
+
+### Fixed
+- Corrected plugin `id` in `manifest.json` to match the expected Obsidian plugin identifier.
+
+---
+
+## [1.0.2] - 2026-05-25
+
+### Added
+- **Per-condition color customization** in Settings → Conditions / States:
+  * Each condition now has an individual color picker (native browser color input).
+  * Colors are applied to condition badges in the combat view (text + border tinted, semi-transparent background — Option A style).
+  * Colors are also reflected in the condition toggle modal, making it easy to identify statuses at a glance.
+  * Default palette: each of the 10 built-in conditions ships with a distinct preset color (amber, green, violet, orange, slate, blue, purple, red, stone, dark).
+- **Add new conditions** with a custom name and color directly from the Settings panel.
+- **Delete any condition** from the list via a per-row delete button.
+- **Automatic data migration**: existing installations that stored conditions as a comma-separated string are silently upgraded to the new `ConditionEntry[]` format on first load, preserving all custom condition names.
+- **Refactored UI styling architecture:** Migrated component styles to a dedicated `styles.css` file. 
+  * Organized styles into clean, commented sections:
+    * Panel, top bar, buttons.
+    * Initiative tracker, combatant cards, avatars, type badges.
+    * Condition tags, HP bar, extra fields, notes, actions.
+    * Modals (damage, conditions, notes, pick, log).
+    * Settings section (condition color management).
+  * Streamlined codebase by cleaning up style-related code in `view.ts` and `settings.ts`.
+

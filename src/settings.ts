@@ -1,8 +1,34 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import BattleTrackerPlugin from "./main";
-import { BattleTrackerSettings } from "./types";
+import { BattleTrackerSettings, ConditionEntry } from "./types";
 import { LOCALIZATION } from "./localization";
 import { VIEW_TYPE, BattleTrackerView } from "./view";
+
+export const DEFAULT_CONDITIONS_ES: ConditionEntry[] = [
+	{ name: "Aturdido",       color: "#f59e0b" },
+	{ name: "Envenenado",     color: "#22c55e" },
+	{ name: "Paralizado",     color: "#a855f7" },
+	{ name: "Asustado",       color: "#f97316" },
+	{ name: "Invisible",      color: "#94a3b8" },
+	{ name: "Concentración",  color: "#3b82f6" },
+	{ name: "Maldito",        color: "#9333ea" },
+	{ name: "Quemando",       color: "#ef4444" },
+	{ name: "Caído",          color: "#78716c" },
+	{ name: "Cegado",         color: "#1e293b" },
+];
+
+export const DEFAULT_CONDITIONS_EN: ConditionEntry[] = [
+	{ name: "Stunned",        color: "#f59e0b" },
+	{ name: "Poisoned",       color: "#22c55e" },
+	{ name: "Paralyzed",      color: "#a855f7" },
+	{ name: "Frightened",     color: "#f97316" },
+	{ name: "Invisible",      color: "#94a3b8" },
+	{ name: "Concentration",  color: "#3b82f6" },
+	{ name: "Cursed",         color: "#9333ea" },
+	{ name: "Burning",        color: "#ef4444" },
+	{ name: "Prone",          color: "#78716c" },
+	{ name: "Blinded",        color: "#1e293b" },
+];
 
 export const DEFAULT_SETTINGS: BattleTrackerSettings = {
 	language: "es",
@@ -14,7 +40,7 @@ export const DEFAULT_SETTINGS: BattleTrackerSettings = {
 		type: "type",
 		extra_fields: "mp,stamina",
 	},
-	conditions: "Aturdido,Envenenado,Paralizado,Asustado,Invisible,Concentración,Maldito,Quemando,Caído,Cegado",
+	conditions: DEFAULT_CONDITIONS_ES,
 	combatantFolder: "",
 	logEnabled: true,
 	logMode: "ask",
@@ -53,15 +79,13 @@ export class BattleTrackerSettingTab extends PluginSettingTab {
 						const oldLang = this.plugin.settings.language;
 						if (oldLang === value) return;
 
-						// Automatically switch defaults if they were unchanged
-						const parseConds = (str: string) => str.split(",").map(s => s.trim()).filter(Boolean).join(",");
+						// Automatically switch condition defaults if they were unchanged
+						const currentNames = this.plugin.settings.conditions.map(c => c.name).join(",");
+						const esNames = DEFAULT_CONDITIONS_ES.map(c => c.name).join(",");
+						const enNames = DEFAULT_CONDITIONS_EN.map(c => c.name).join(",");
 
-						const esCondDefaults = "Aturdido,Envenenado,Paralizado,Asustado,Invisible,Concentración,Maldito,Quemando,Caído,Cegado";
-						const enCondDefaults = "Stunned,Poisoned,Paralyzed,Frightened,Invisible,Concentration,Cursed,Burning,Prone,Blinded";
-
-						const currentCondsParsed = parseConds(this.plugin.settings.conditions);
-						if (currentCondsParsed === parseConds(esCondDefaults) || currentCondsParsed === parseConds(enCondDefaults)) {
-							this.plugin.settings.conditions = value === "es" ? esCondDefaults : enCondDefaults;
+						if (currentNames === esNames || currentNames === enNames) {
+							this.plugin.settings.conditions = value === "es" ? [...DEFAULT_CONDITIONS_ES] : [...DEFAULT_CONDITIONS_EN];
 						}
 
 						const esHeader = "## Registro de Combate";
@@ -127,17 +151,12 @@ export class BattleTrackerSettingTab extends PluginSettingTab {
 			.setDesc(t.settingsExtraDesc)
 			.addText((text) => text.setValue(f.extra_fields).onChange(async (v) => { f.extra_fields = v; await this.plugin.saveSettings(); }));
 
+		// ── Conditions / States ───────────────────────────────────────────────
 		containerEl.createEl("h3", { text: t.settingsCondTitle });
-		new Setting(containerEl)
-			.setName(t.settingsCondName)
-			.setDesc(t.settingsCondDesc)
-			.addTextArea((text) => {
-				text.setValue(this.plugin.settings.conditions).onChange(async (v) => {
-					this.plugin.settings.conditions = v;
-					await this.plugin.saveSettings();
-				});
-				text.inputEl.rows = 3;
-			});
+		containerEl.createEl("p", { text: t.settingsCondColorDesc, cls: "setting-item-description" });
+
+		const condListEl = containerEl.createDiv("bt-settings-cond-list");
+		this.renderConditionRows(condListEl, t);
 
 		containerEl.createEl("h3", { text: t.settingsFolderTitle });
 		new Setting(containerEl)
@@ -208,5 +227,94 @@ export class BattleTrackerSettingTab extends PluginSettingTab {
 						})
 				);
 		}
+	}
+
+	// ── Render condition rows ──────────────────────────────────────────────────
+
+	renderConditionRows(condListEl: HTMLElement, t: typeof LOCALIZATION["es"]) {
+		condListEl.empty();
+
+		const conditions = this.plugin.settings.conditions;
+
+		conditions.forEach((entry, idx) => {
+			const row = condListEl.createDiv("bt-settings-cond-row");
+
+			// Color preview badge (text + border in that color, semi-transparent bg)
+			const preview = row.createDiv("bt-settings-cond-preview");
+			this.applyCondPreviewStyle(preview, entry.color);
+			preview.setText(entry.name.slice(0, 2).toUpperCase() || "??");
+
+			// Name input
+			const nameInput = row.createEl("input", {
+				cls: "bt-settings-cond-name",
+				type: "text",
+			}) as HTMLInputElement;
+			nameInput.value = entry.name;
+			nameInput.placeholder = t.settingsCondNamePlaceholder;
+			nameInput.addEventListener("change", async () => {
+				conditions[idx].name = nameInput.value.trim();
+				preview.setText(conditions[idx].name.slice(0, 2).toUpperCase() || "??");
+				await this.plugin.saveSettings();
+				this.refreshView();
+			});
+
+			// Color label
+			row.createEl("span", { cls: "bt-settings-color-label", text: t.settingsCondColorLabel });
+
+			// Color picker
+			const colorInput = row.createEl("input", {
+				cls: "bt-settings-color-input",
+				type: "color",
+			}) as HTMLInputElement;
+			colorInput.value = entry.color || "#888888";
+			colorInput.addEventListener("input", async () => {
+				conditions[idx].color = colorInput.value;
+				this.applyCondPreviewStyle(preview, colorInput.value);
+				await this.plugin.saveSettings();
+				this.refreshView();
+			});
+
+			// Delete button
+			const delBtn = row.createEl("button", {
+				cls: "bt-settings-cond-del",
+				text: t.settingsCondDeleteBtn,
+			});
+			delBtn.onclick = async () => {
+				conditions.splice(idx, 1);
+				await this.plugin.saveSettings();
+				this.renderConditionRows(condListEl, t);
+				this.refreshView();
+			};
+		});
+
+		// Add condition button
+		const addBtn = condListEl.createEl("button", {
+			cls: "bt-settings-cond-add",
+			text: t.settingsCondAddBtn,
+		});
+		addBtn.onclick = async () => {
+			conditions.push({ name: "", color: "#888888" });
+			await this.plugin.saveSettings();
+			this.renderConditionRows(condListEl, t);
+			// Focus the last added name input
+			const rows = condListEl.querySelectorAll(".bt-settings-cond-name");
+			if (rows.length) (rows[rows.length - 1] as HTMLInputElement).focus();
+		};
+	}
+
+	applyCondPreviewStyle(el: HTMLElement, color: string) {
+		const c = color || "var(--text-accent)";
+		el.style.color = c;
+		el.style.borderColor = c;
+		el.style.backgroundColor = color ? color + "22" : "transparent";
+	}
+
+	refreshView() {
+		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE);
+		leaves.forEach((leaf) => {
+			if (leaf.view instanceof BattleTrackerView) {
+				leaf.view.render();
+			}
+		});
 	}
 }

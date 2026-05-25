@@ -2,6 +2,7 @@ import { App, Modal, Notice, TFile } from "obsidian";
 import BattleTrackerPlugin from "./main";
 import { BattleTrackerView } from "./view";
 import { LOCALIZATION } from "./localization";
+import { ConditionEntry } from "./types";
 
 export class DmgModal extends Modal {
 	name: string;
@@ -36,12 +37,12 @@ export class DmgModal extends Modal {
 }
 
 export class ConditionModal extends Modal {
-	allConditions: string[];
+	allConditions: ConditionEntry[];
 	current: string[];
 	plugin: BattleTrackerPlugin;
 	onConfirm: (updated: string[]) => void;
 
-	constructor(app: App, all: string[], current: string[], plugin: BattleTrackerPlugin, onConfirm: (u: string[]) => void) {
+	constructor(app: App, all: ConditionEntry[], current: string[], plugin: BattleTrackerPlugin, onConfirm: (u: string[]) => void) {
 		super(app);
 		this.allConditions = all;
 		this.current = [...current];
@@ -56,16 +57,35 @@ export class ConditionModal extends Modal {
 
 		contentEl.createEl("h3", { text: t.condModalTitle });
 		const grid = contentEl.createDiv("bt-cond-grid");
-		this.allConditions.forEach((cond) => {
+		this.allConditions.forEach((entry) => {
+			const isSelected = this.current.includes(entry.name);
 			const btn = grid.createEl("button", {
-				cls: `bt-cond-toggle${this.current.includes(cond) ? " selected" : ""}`,
-				text: cond,
+				cls: `bt-cond-toggle${isSelected ? " selected" : ""}`,
+				text: entry.name,
 			});
+
+			// Apply Option A color: text + border tinted, semi-transparent bg
+			const applyColor = (selected: boolean) => {
+				if (entry.color) {
+					if (selected) {
+						btn.style.backgroundColor = entry.color;
+						btn.style.borderColor = entry.color;
+						btn.style.color = "#fff";
+					} else {
+						btn.style.color = entry.color;
+						btn.style.borderColor = entry.color;
+						btn.style.backgroundColor = entry.color + "22";
+					}
+				}
+			};
+			applyColor(isSelected);
+
 			btn.onclick = () => {
-				const idx = this.current.indexOf(cond);
+				const idx = this.current.indexOf(entry.name);
 				if (idx >= 0) this.current.splice(idx, 1);
-				else this.current.push(cond);
+				else this.current.push(entry.name);
 				btn.classList.toggle("selected");
+				applyColor(btn.classList.contains("selected"));
 			};
 		});
 		const row = contentEl.createDiv("bt-modal-actions");

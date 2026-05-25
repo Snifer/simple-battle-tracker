@@ -9,6 +9,11 @@ export default class BattleTrackerPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
+		const registry = (this.app as any).viewRegistry;
+		if (registry && registry.viewByType && registry.viewByType[VIEW_TYPE]) {
+			delete registry.viewByType[VIEW_TYPE];
+		}
+
 		this.registerView(VIEW_TYPE, (leaf) => new BattleTrackerView(leaf, this));
 
 		this.addRibbonIcon("sword", "Battle Tracker", () => this.activateView());
@@ -20,6 +25,10 @@ export default class BattleTrackerPlugin extends Plugin {
 		});
 
 		this.addSettingTab(new BattleTrackerSettingTab(this.app, this));
+	}
+
+	onunload() {
+		this.app.workspace.detachLeavesOfType(VIEW_TYPE);
 	}
 
 	async activateView() {
@@ -38,6 +47,16 @@ export default class BattleTrackerPlugin extends Plugin {
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 		if (!this.settings.fields) this.settings.fields = DEFAULT_SETTINGS.fields;
+
+		// Migration: convert legacy comma-separated conditions string to ConditionEntry[]
+		if (typeof this.settings.conditions === "string") {
+			this.settings.conditions = (this.settings.conditions as unknown as string)
+				.split(",")
+				.map(s => s.trim())
+				.filter(Boolean)
+				.map(name => ({ name, color: "" }));
+			await this.saveSettings();
+		}
 	}
 
 	async saveSettings() {

@@ -401,10 +401,8 @@ export class BattleTrackerView extends ItemView {
 		const lang = this.plugin.settings.language;
 		const t = LOCALIZATION[lang];
 
-		const conditions = this.plugin.settings.conditions
-			.split(",")
-			.map((s) => s.trim())
-			.filter(Boolean);
+		const conditionEntries = this.plugin.settings.conditions;
+		const conditions = conditionEntries.map(e => e.name);
 
 		// ── Top bar ──────────────────────────────────────────────────────
 
@@ -498,6 +496,13 @@ export class BattleTrackerView extends ItemView {
 				c.conditions.forEach((cond) => {
 					const tag = condRow.createDiv("bt-cond-tag");
 					tag.setText(cond + " ×");
+					// Apply Option A: color as text + border, semi-transparent bg
+					const entry = conditionEntries.find(e => e.name === cond);
+					if (entry?.color) {
+						tag.style.color = entry.color;
+						tag.style.borderColor = entry.color;
+						tag.style.backgroundColor = entry.color + "22";
+					}
 					tag.onclick = () => this.toggleCondition(c.id, cond);
 				});
 			}
@@ -545,7 +550,7 @@ export class BattleTrackerView extends ItemView {
 
 			const condBtn = actions.createEl("button", { cls: "bt-btn" });
 			condBtn.setText(t.status);
-			condBtn.onclick = () => new ConditionModal(this.app, conditions, c.conditions, this.plugin, (updated) => {
+			condBtn.onclick = () => new ConditionModal(this.app, conditionEntries, c.conditions, this.plugin, (updated) => {
 				const removed = c.conditions.filter(x => !updated.includes(x));
 				const added = updated.filter(x => !c.conditions.includes(x));
 
@@ -605,88 +610,10 @@ export class BattleTrackerView extends ItemView {
 			}
 		});
 
-		// ── Styles ───────────────────────────────────────────────────────
-		this.injectStyles();
-	}
-
-	injectStyles() {
-		const existing = document.getElementById("bt-styles");
-		if (existing) return;
-		const style = document.createElement("style");
-		style.id = "bt-styles";
-		style.textContent = `
-.bt-panel { padding: 10px; font-size: 13px; overflow-y: auto; }
-.bt-topbar { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
-.bt-round-badge { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 6px; background: var(--background-modifier-border); color: var(--text-normal); }
-.bt-top-actions { display: flex; gap: 5px; flex-wrap: wrap; margin-left: auto; }
-.bt-btn { font-size: 11px; padding: 4px 9px; border-radius: 5px; border: 1px solid var(--background-modifier-border); background: transparent; color: var(--text-normal); cursor: pointer; }
-.bt-btn:hover { background: var(--background-modifier-hover); }
-.bt-btn-primary { border-color: var(--interactive-accent); color: var(--interactive-accent); }
-.bt-btn-primary:hover { background: var(--interactive-accent); color: var(--text-on-accent); }
-.bt-btn-danger-soft { border-color: var(--text-error); color: var(--text-error); }
-.bt-btn-danger-soft:hover { background: var(--text-error); color: #fff; }
-.bt-btn-ghost { font-size: 11px; padding: 4px 9px; border-radius: 5px; border: 1px solid var(--background-modifier-border); background: transparent; color: var(--text-muted); cursor: pointer; }
-.bt-btn-ghost:hover { background: var(--background-modifier-hover); }
-.bt-btn-icon { background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 13px; padding: 0 4px; margin-left: auto; }
-.bt-btn-icon:hover { color: var(--text-error); }
-.bt-btn-mini { font-size: 13px; padding: 0 5px; border: 1px solid var(--background-modifier-border); border-radius: 4px; background: transparent; color: var(--text-normal); cursor: pointer; line-height: 1.4; }
-.bt-btn-mini:hover { background: var(--background-modifier-hover); }
-.bt-init-strip { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
-.bt-init-chip { font-size: 11px; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--background-modifier-border); color: var(--text-muted); background: var(--background-secondary); }
-.bt-init-chip.active { background: var(--interactive-accent); color: var(--text-on-accent); border-color: transparent; font-weight: 600; }
-.bt-empty { text-align: center; padding: 30px 10px; color: var(--text-muted); }
-.bt-card { border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; background: var(--background-primary); }
-.bt-card-active { border: 2px solid var(--interactive-accent); }
-.bt-card-dead { opacity: 0.4; }
-.bt-card-header { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
-.bt-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
-.bt-avatar-pc { background: var(--color-blue-background); color: var(--color-blue); }
-.bt-avatar-enemy { background: var(--color-red-background); color: var(--color-red); }
-.bt-avatar-npc { background: var(--color-yellow-background); color: var(--color-yellow); }
-.bt-name-wrap { display: flex; flex-direction: column; min-width: 0; }
-.bt-name { font-size: 13px; font-weight: 600; color: var(--text-normal); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bt-sub { font-size: 11px; color: var(--text-muted); }
-.bt-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: auto; white-space: nowrap; }
-.bt-badge-pc { background: var(--color-blue-background); color: var(--color-blue); }
-.bt-badge-enemy { background: var(--color-red-background); color: var(--color-red); }
-.bt-badge-npc { background: var(--color-yellow-background); color: var(--color-yellow); }
-.bt-cond-row { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 7px; }
-.bt-cond-tag { font-size: 10px; padding: 2px 6px; border-radius: 99px; border: 1px solid var(--background-modifier-border); cursor: pointer; color: var(--text-accent); background: var(--background-secondary); }
-.bt-cond-tag:hover { background: var(--background-modifier-hover); }
-.bt-hp-wrap { margin-bottom: 8px; }
-.bt-hp-label-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
-.bt-label { font-size: 10px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em; }
-.bt-hp-text { font-size: 11px; color: var(--text-normal); }
-.bt-bar { height: 5px; background: var(--background-modifier-border); border-radius: 99px; overflow: hidden; }
-.bt-bar-fill { height: 100%; border-radius: 99px; transition: width 0.3s; }
-.bt-hp-ok { background: var(--color-green); }
-.bt-hp-mid { background: var(--color-yellow); }
-.bt-hp-low { background: var(--color-red); }
-.bt-extra-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
-.bt-extra-box { display: flex; flex-direction: column; gap: 3px; align-items: center; background: var(--background-secondary); border-radius: 5px; padding: 4px 8px; min-width: 60px; }
-.bt-extra-val-row { display: flex; align-items: center; gap: 4px; }
-.bt-extra-val { font-size: 13px; font-weight: 600; min-width: 20px; text-align: center; }
-.bt-notes { font-size: 11px; color: var(--text-muted); font-style: italic; border-left: 2px solid var(--background-modifier-border); padding-left: 6px; margin-bottom: 7px; }
-.bt-actions { display: flex; gap: 5px; flex-wrap: wrap; }
-/* Modal */
-.bt-modal-content { display: flex; flex-direction: column; gap: 10px; }
-.bt-modal-content input, .bt-modal-content textarea { width: 100%; padding: 6px 8px; border: 1px solid var(--background-modifier-border); border-radius: 5px; background: var(--background-primary); color: var(--text-normal); font-size: 13px; }
-.bt-modal-content textarea { min-height: 80px; resize: vertical; }
-.bt-cond-grid { display: flex; gap: 6px; flex-wrap: wrap; }
-.bt-cond-toggle { font-size: 11px; padding: 4px 9px; border-radius: 99px; border: 1px solid var(--background-modifier-border); cursor: pointer; background: transparent; color: var(--text-muted); }
-.bt-cond-toggle.selected { background: var(--interactive-accent); color: var(--text-on-accent); border-color: transparent; }
-.bt-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
-.bt-pick-list { max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
-.bt-pick-item { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 5px; cursor: pointer; }
-.bt-pick-item:hover { background: var(--background-modifier-hover); }
-.bt-pick-item input[type=checkbox] { margin: 0; }
-.bt-pick-item label { cursor: pointer; font-size: 12px; }
-		`;
-		document.head.appendChild(style);
+		// ── Styles loaded from styles.css ───────────────────────────────
 	}
 
 	async onClose() {
-		const style = document.getElementById("bt-styles");
-		if (style) style.remove();
+		// Nothing to clean up — styles are in styles.css
 	}
 }

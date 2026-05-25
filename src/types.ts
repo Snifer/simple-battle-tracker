@@ -9,10 +9,15 @@ export interface FieldMapping {
 	extra_fields: string;  // comma-separated extra numeric field names
 }
 
+export interface ConditionEntry {
+	name: string;
+	color: string; // hex color, e.g. "#a855f7". Empty string = use default style.
+}
+
 export interface BattleTrackerSettings {
 	language: "es" | "en";
 	fields: FieldMapping;
-	conditions: string;    // comma-separated list
+	conditions: ConditionEntry[];
 	combatantFolder: string;
 	logEnabled: boolean;
 	logMode: "new" | "existing" | "ask";

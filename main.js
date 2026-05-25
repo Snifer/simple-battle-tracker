@@ -79,8 +79,11 @@ var init_localization = __esm({
         settingsExtraName: "Campos extra",
         settingsExtraDesc: "Propiedades num\xE9ricas adicionales separadas por comas (ej. mp,stamina,stress)",
         settingsCondTitle: "Condiciones / Estados",
-        settingsCondName: "Lista de condiciones",
-        settingsCondDesc: "Separadas por coma",
+        settingsCondColorDesc: "Personaliza el nombre y color de cada estado. El color se aplica al badge en la vista de combate.",
+        settingsCondAddBtn: "\uFF0B A\xF1adir condici\xF3n",
+        settingsCondDeleteBtn: "Eliminar",
+        settingsCondNamePlaceholder: "Nombre del estado",
+        settingsCondColorLabel: "Color",
         settingsFolderTitle: "Carpeta de combatientes (opcional)",
         settingsFolderFieldName: "Ruta de carpeta",
         settingsFolderFieldDesc: "Si indicas una carpeta (ej. Campa\xF1a/Criaturas), al pulsar \xABCargar\xBB cargar\xE1 todas las notas de esa carpeta autom\xE1ticamente. D\xE9jalo vac\xEDo para seleccionar manualmente.",
@@ -166,8 +169,11 @@ var init_localization = __esm({
         settingsExtraName: "Extra fields",
         settingsExtraDesc: "Additional numeric properties separated by commas (e.g. mp,stamina,stress)",
         settingsCondTitle: "Conditions / States",
-        settingsCondName: "Condition list",
-        settingsCondDesc: "Separated by comma",
+        settingsCondColorDesc: "Customize the name and color of each status. The color is applied to the badge in the combat view.",
+        settingsCondAddBtn: "\uFF0B Add condition",
+        settingsCondDeleteBtn: "Delete",
+        settingsCondNamePlaceholder: "Status name",
+        settingsCondColorLabel: "Color",
         settingsFolderTitle: "Combatant Folder (optional)",
         settingsFolderFieldName: "Folder path",
         settingsFolderFieldDesc: "If you specify a folder (e.g. Campaign/Creatures), clicking 'Load' will load all notes in that folder automatically. Leave empty to select manually.",
@@ -266,18 +272,34 @@ var init_modals = __esm({
         const t = LOCALIZATION[lang];
         contentEl.createEl("h3", { text: t.condModalTitle });
         const grid = contentEl.createDiv("bt-cond-grid");
-        this.allConditions.forEach((cond) => {
+        this.allConditions.forEach((entry) => {
+          const isSelected = this.current.includes(entry.name);
           const btn = grid.createEl("button", {
-            cls: `bt-cond-toggle${this.current.includes(cond) ? " selected" : ""}`,
-            text: cond
+            cls: `bt-cond-toggle${isSelected ? " selected" : ""}`,
+            text: entry.name
           });
+          const applyColor = (selected) => {
+            if (entry.color) {
+              if (selected) {
+                btn.style.backgroundColor = entry.color;
+                btn.style.borderColor = entry.color;
+                btn.style.color = "#fff";
+              } else {
+                btn.style.color = entry.color;
+                btn.style.borderColor = entry.color;
+                btn.style.backgroundColor = entry.color + "22";
+              }
+            }
+          };
+          applyColor(isSelected);
           btn.onclick = () => {
-            const idx = this.current.indexOf(cond);
+            const idx = this.current.indexOf(entry.name);
             if (idx >= 0)
               this.current.splice(idx, 1);
             else
-              this.current.push(cond);
+              this.current.push(entry.name);
             btn.classList.toggle("selected");
+            applyColor(btn.classList.contains("selected"));
           };
         });
         const row = contentEl.createDiv("bt-modal-actions");
@@ -787,7 +809,8 @@ ${header}
     container.addClass("bt-panel");
     const lang = this.plugin.settings.language;
     const t = LOCALIZATION[lang];
-    const conditions = this.plugin.settings.conditions.split(",").map((s) => s.trim()).filter(Boolean);
+    const conditionEntries = this.plugin.settings.conditions;
+    const conditions = conditionEntries.map((e) => e.name);
     const topBar = container.createDiv("bt-topbar");
     const roundEl = topBar.createDiv("bt-round-badge");
     roundEl.setText(`${t.round} ${this.round}`);
@@ -854,6 +877,12 @@ ${header}
         c.conditions.forEach((cond) => {
           const tag = condRow.createDiv("bt-cond-tag");
           tag.setText(cond + " \xD7");
+          const entry = conditionEntries.find((e) => e.name === cond);
+          if (entry == null ? void 0 : entry.color) {
+            tag.style.color = entry.color;
+            tag.style.borderColor = entry.color;
+            tag.style.backgroundColor = entry.color + "22";
+          }
           tag.onclick = () => this.toggleCondition(c.id, cond);
         });
       }
@@ -890,7 +919,7 @@ ${header}
       }).open();
       const condBtn = actions.createEl("button", { cls: "bt-btn" });
       condBtn.setText(t.status);
-      condBtn.onclick = () => new ConditionModal(this.app, conditions, c.conditions, this.plugin, (updated) => {
+      condBtn.onclick = () => new ConditionModal(this.app, conditionEntries, c.conditions, this.plugin, (updated) => {
         const removed = c.conditions.filter((x) => !updated.includes(x));
         const added = updated.filter((x) => !c.conditions.includes(x));
         c.conditions = updated;
@@ -934,92 +963,36 @@ ${header}
         };
       }
     });
-    this.injectStyles();
-  }
-  injectStyles() {
-    const existing = document.getElementById("bt-styles");
-    if (existing)
-      return;
-    const style = document.createElement("style");
-    style.id = "bt-styles";
-    style.textContent = `
-.bt-panel { padding: 10px; font-size: 13px; overflow-y: auto; }
-.bt-topbar { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
-.bt-round-badge { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 6px; background: var(--background-modifier-border); color: var(--text-normal); }
-.bt-top-actions { display: flex; gap: 5px; flex-wrap: wrap; margin-left: auto; }
-.bt-btn { font-size: 11px; padding: 4px 9px; border-radius: 5px; border: 1px solid var(--background-modifier-border); background: transparent; color: var(--text-normal); cursor: pointer; }
-.bt-btn:hover { background: var(--background-modifier-hover); }
-.bt-btn-primary { border-color: var(--interactive-accent); color: var(--interactive-accent); }
-.bt-btn-primary:hover { background: var(--interactive-accent); color: var(--text-on-accent); }
-.bt-btn-danger-soft { border-color: var(--text-error); color: var(--text-error); }
-.bt-btn-danger-soft:hover { background: var(--text-error); color: #fff; }
-.bt-btn-ghost { font-size: 11px; padding: 4px 9px; border-radius: 5px; border: 1px solid var(--background-modifier-border); background: transparent; color: var(--text-muted); cursor: pointer; }
-.bt-btn-ghost:hover { background: var(--background-modifier-hover); }
-.bt-btn-icon { background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 13px; padding: 0 4px; margin-left: auto; }
-.bt-btn-icon:hover { color: var(--text-error); }
-.bt-btn-mini { font-size: 13px; padding: 0 5px; border: 1px solid var(--background-modifier-border); border-radius: 4px; background: transparent; color: var(--text-normal); cursor: pointer; line-height: 1.4; }
-.bt-btn-mini:hover { background: var(--background-modifier-hover); }
-.bt-init-strip { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
-.bt-init-chip { font-size: 11px; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--background-modifier-border); color: var(--text-muted); background: var(--background-secondary); }
-.bt-init-chip.active { background: var(--interactive-accent); color: var(--text-on-accent); border-color: transparent; font-weight: 600; }
-.bt-empty { text-align: center; padding: 30px 10px; color: var(--text-muted); }
-.bt-card { border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; background: var(--background-primary); }
-.bt-card-active { border: 2px solid var(--interactive-accent); }
-.bt-card-dead { opacity: 0.4; }
-.bt-card-header { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
-.bt-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
-.bt-avatar-pc { background: var(--color-blue-background); color: var(--color-blue); }
-.bt-avatar-enemy { background: var(--color-red-background); color: var(--color-red); }
-.bt-avatar-npc { background: var(--color-yellow-background); color: var(--color-yellow); }
-.bt-name-wrap { display: flex; flex-direction: column; min-width: 0; }
-.bt-name { font-size: 13px; font-weight: 600; color: var(--text-normal); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bt-sub { font-size: 11px; color: var(--text-muted); }
-.bt-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: auto; white-space: nowrap; }
-.bt-badge-pc { background: var(--color-blue-background); color: var(--color-blue); }
-.bt-badge-enemy { background: var(--color-red-background); color: var(--color-red); }
-.bt-badge-npc { background: var(--color-yellow-background); color: var(--color-yellow); }
-.bt-cond-row { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 7px; }
-.bt-cond-tag { font-size: 10px; padding: 2px 6px; border-radius: 99px; border: 1px solid var(--background-modifier-border); cursor: pointer; color: var(--text-accent); background: var(--background-secondary); }
-.bt-cond-tag:hover { background: var(--background-modifier-hover); }
-.bt-hp-wrap { margin-bottom: 8px; }
-.bt-hp-label-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
-.bt-label { font-size: 10px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em; }
-.bt-hp-text { font-size: 11px; color: var(--text-normal); }
-.bt-bar { height: 5px; background: var(--background-modifier-border); border-radius: 99px; overflow: hidden; }
-.bt-bar-fill { height: 100%; border-radius: 99px; transition: width 0.3s; }
-.bt-hp-ok { background: var(--color-green); }
-.bt-hp-mid { background: var(--color-yellow); }
-.bt-hp-low { background: var(--color-red); }
-.bt-extra-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
-.bt-extra-box { display: flex; flex-direction: column; gap: 3px; align-items: center; background: var(--background-secondary); border-radius: 5px; padding: 4px 8px; min-width: 60px; }
-.bt-extra-val-row { display: flex; align-items: center; gap: 4px; }
-.bt-extra-val { font-size: 13px; font-weight: 600; min-width: 20px; text-align: center; }
-.bt-notes { font-size: 11px; color: var(--text-muted); font-style: italic; border-left: 2px solid var(--background-modifier-border); padding-left: 6px; margin-bottom: 7px; }
-.bt-actions { display: flex; gap: 5px; flex-wrap: wrap; }
-/* Modal */
-.bt-modal-content { display: flex; flex-direction: column; gap: 10px; }
-.bt-modal-content input, .bt-modal-content textarea { width: 100%; padding: 6px 8px; border: 1px solid var(--background-modifier-border); border-radius: 5px; background: var(--background-primary); color: var(--text-normal); font-size: 13px; }
-.bt-modal-content textarea { min-height: 80px; resize: vertical; }
-.bt-cond-grid { display: flex; gap: 6px; flex-wrap: wrap; }
-.bt-cond-toggle { font-size: 11px; padding: 4px 9px; border-radius: 99px; border: 1px solid var(--background-modifier-border); cursor: pointer; background: transparent; color: var(--text-muted); }
-.bt-cond-toggle.selected { background: var(--interactive-accent); color: var(--text-on-accent); border-color: transparent; }
-.bt-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
-.bt-pick-list { max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
-.bt-pick-item { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 5px; cursor: pointer; }
-.bt-pick-item:hover { background: var(--background-modifier-hover); }
-.bt-pick-item input[type=checkbox] { margin: 0; }
-.bt-pick-item label { cursor: pointer; font-size: 12px; }
-		`;
-    document.head.appendChild(style);
   }
   async onClose() {
-    const style = document.getElementById("bt-styles");
-    if (style)
-      style.remove();
   }
 };
 
 // src/settings.ts
+var DEFAULT_CONDITIONS_ES = [
+  { name: "Aturdido", color: "#f59e0b" },
+  { name: "Envenenado", color: "#22c55e" },
+  { name: "Paralizado", color: "#a855f7" },
+  { name: "Asustado", color: "#f97316" },
+  { name: "Invisible", color: "#94a3b8" },
+  { name: "Concentraci\xF3n", color: "#3b82f6" },
+  { name: "Maldito", color: "#9333ea" },
+  { name: "Quemando", color: "#ef4444" },
+  { name: "Ca\xEDdo", color: "#78716c" },
+  { name: "Cegado", color: "#1e293b" }
+];
+var DEFAULT_CONDITIONS_EN = [
+  { name: "Stunned", color: "#f59e0b" },
+  { name: "Poisoned", color: "#22c55e" },
+  { name: "Paralyzed", color: "#a855f7" },
+  { name: "Frightened", color: "#f97316" },
+  { name: "Invisible", color: "#94a3b8" },
+  { name: "Concentration", color: "#3b82f6" },
+  { name: "Cursed", color: "#9333ea" },
+  { name: "Burning", color: "#ef4444" },
+  { name: "Prone", color: "#78716c" },
+  { name: "Blinded", color: "#1e293b" }
+];
 var DEFAULT_SETTINGS = {
   language: "es",
   fields: {
@@ -1030,7 +1003,7 @@ var DEFAULT_SETTINGS = {
     type: "type",
     extra_fields: "mp,stamina"
   },
-  conditions: "Aturdido,Envenenado,Paralizado,Asustado,Invisible,Concentraci\xF3n,Maldito,Quemando,Ca\xEDdo,Cegado",
+  conditions: DEFAULT_CONDITIONS_ES,
   combatantFolder: "",
   logEnabled: true,
   logMode: "ask",
@@ -1054,12 +1027,11 @@ var BattleTrackerSettingTab = class extends import_obsidian3.PluginSettingTab {
         const oldLang = this.plugin.settings.language;
         if (oldLang === value)
           return;
-        const parseConds = (str) => str.split(",").map((s) => s.trim()).filter(Boolean).join(",");
-        const esCondDefaults = "Aturdido,Envenenado,Paralizado,Asustado,Invisible,Concentraci\xF3n,Maldito,Quemando,Ca\xEDdo,Cegado";
-        const enCondDefaults = "Stunned,Poisoned,Paralyzed,Frightened,Invisible,Concentration,Cursed,Burning,Prone,Blinded";
-        const currentCondsParsed = parseConds(this.plugin.settings.conditions);
-        if (currentCondsParsed === parseConds(esCondDefaults) || currentCondsParsed === parseConds(enCondDefaults)) {
-          this.plugin.settings.conditions = value === "es" ? esCondDefaults : enCondDefaults;
+        const currentNames = this.plugin.settings.conditions.map((c) => c.name).join(",");
+        const esNames = DEFAULT_CONDITIONS_ES.map((c) => c.name).join(",");
+        const enNames = DEFAULT_CONDITIONS_EN.map((c) => c.name).join(",");
+        if (currentNames === esNames || currentNames === enNames) {
+          this.plugin.settings.conditions = value === "es" ? [...DEFAULT_CONDITIONS_ES] : [...DEFAULT_CONDITIONS_EN];
         }
         const esHeader = "## Registro de Combate";
         const enHeader = "## Combat Log";
@@ -1110,13 +1082,9 @@ var BattleTrackerSettingTab = class extends import_obsidian3.PluginSettingTab {
       await this.plugin.saveSettings();
     }));
     containerEl.createEl("h3", { text: t.settingsCondTitle });
-    new import_obsidian3.Setting(containerEl).setName(t.settingsCondName).setDesc(t.settingsCondDesc).addTextArea((text) => {
-      text.setValue(this.plugin.settings.conditions).onChange(async (v) => {
-        this.plugin.settings.conditions = v;
-        await this.plugin.saveSettings();
-      });
-      text.inputEl.rows = 3;
-    });
+    containerEl.createEl("p", { text: t.settingsCondColorDesc, cls: "setting-item-description" });
+    const condListEl = containerEl.createDiv("bt-settings-cond-list");
+    this.renderConditionRows(condListEl, t);
     containerEl.createEl("h3", { text: t.settingsFolderTitle });
     new import_obsidian3.Setting(containerEl).setName(t.settingsFolderFieldName).setDesc(t.settingsFolderFieldDesc).addText(
       (text) => text.setPlaceholder("Campa\xF1a/Criaturas").setValue(this.plugin.settings.combatantFolder).onChange(async (v) => {
@@ -1153,12 +1121,87 @@ var BattleTrackerSettingTab = class extends import_obsidian3.PluginSettingTab {
       );
     }
   }
+  // ── Render condition rows ──────────────────────────────────────────────────
+  renderConditionRows(condListEl, t) {
+    condListEl.empty();
+    const conditions = this.plugin.settings.conditions;
+    conditions.forEach((entry, idx) => {
+      const row = condListEl.createDiv("bt-settings-cond-row");
+      const preview = row.createDiv("bt-settings-cond-preview");
+      this.applyCondPreviewStyle(preview, entry.color);
+      preview.setText(entry.name.slice(0, 2).toUpperCase() || "??");
+      const nameInput = row.createEl("input", {
+        cls: "bt-settings-cond-name",
+        type: "text"
+      });
+      nameInput.value = entry.name;
+      nameInput.placeholder = t.settingsCondNamePlaceholder;
+      nameInput.addEventListener("change", async () => {
+        conditions[idx].name = nameInput.value.trim();
+        preview.setText(conditions[idx].name.slice(0, 2).toUpperCase() || "??");
+        await this.plugin.saveSettings();
+        this.refreshView();
+      });
+      row.createEl("span", { cls: "bt-settings-color-label", text: t.settingsCondColorLabel });
+      const colorInput = row.createEl("input", {
+        cls: "bt-settings-color-input",
+        type: "color"
+      });
+      colorInput.value = entry.color || "#888888";
+      colorInput.addEventListener("input", async () => {
+        conditions[idx].color = colorInput.value;
+        this.applyCondPreviewStyle(preview, colorInput.value);
+        await this.plugin.saveSettings();
+        this.refreshView();
+      });
+      const delBtn = row.createEl("button", {
+        cls: "bt-settings-cond-del",
+        text: t.settingsCondDeleteBtn
+      });
+      delBtn.onclick = async () => {
+        conditions.splice(idx, 1);
+        await this.plugin.saveSettings();
+        this.renderConditionRows(condListEl, t);
+        this.refreshView();
+      };
+    });
+    const addBtn = condListEl.createEl("button", {
+      cls: "bt-settings-cond-add",
+      text: t.settingsCondAddBtn
+    });
+    addBtn.onclick = async () => {
+      conditions.push({ name: "", color: "#888888" });
+      await this.plugin.saveSettings();
+      this.renderConditionRows(condListEl, t);
+      const rows = condListEl.querySelectorAll(".bt-settings-cond-name");
+      if (rows.length)
+        rows[rows.length - 1].focus();
+    };
+  }
+  applyCondPreviewStyle(el, color) {
+    const c = color || "var(--text-accent)";
+    el.style.color = c;
+    el.style.borderColor = c;
+    el.style.backgroundColor = color ? color + "22" : "transparent";
+  }
+  refreshView() {
+    const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE);
+    leaves.forEach((leaf) => {
+      if (leaf.view instanceof BattleTrackerView) {
+        leaf.view.render();
+      }
+    });
+  }
 };
 
 // src/main.ts
 var BattleTrackerPlugin = class extends import_obsidian4.Plugin {
   async onload() {
     await this.loadSettings();
+    const registry = this.app.viewRegistry;
+    if (registry && registry.viewByType && registry.viewByType[VIEW_TYPE]) {
+      delete registry.viewByType[VIEW_TYPE];
+    }
     this.registerView(VIEW_TYPE, (leaf) => new BattleTrackerView(leaf, this));
     this.addRibbonIcon("sword", "Battle Tracker", () => this.activateView());
     this.addCommand({
@@ -1167,6 +1210,9 @@ var BattleTrackerPlugin = class extends import_obsidian4.Plugin {
       callback: () => this.activateView()
     });
     this.addSettingTab(new BattleTrackerSettingTab(this.app, this));
+  }
+  onunload() {
+    this.app.workspace.detachLeavesOfType(VIEW_TYPE);
   }
   async activateView() {
     const { workspace } = this.app;
@@ -1184,6 +1230,10 @@ var BattleTrackerPlugin = class extends import_obsidian4.Plugin {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
     if (!this.settings.fields)
       this.settings.fields = DEFAULT_SETTINGS.fields;
+    if (typeof this.settings.conditions === "string") {
+      this.settings.conditions = this.settings.conditions.split(",").map((s) => s.trim()).filter(Boolean).map((name) => ({ name, color: "" }));
+      await this.saveSettings();
+    }
   }
   async saveSettings() {
     await this.saveData(this.settings);
