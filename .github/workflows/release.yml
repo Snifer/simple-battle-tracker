@@ -34,4 +34,4 @@ jobs:
           gh release create "$tag" \
             --title "$tag" \
             --notes-file CHANGELOG.md \
-            main.js manifest.json style.css
+            main.js manifest.json styles.css
