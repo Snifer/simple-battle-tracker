@@ -1,5 +1,13 @@
 # Simple Battle Tracker (Rastreador de Combate)
 
+
+[![Obsidian](https://img.shields.io/badge/Obsidian-Plugin-7C3AED?logo=obsidian)](https://obsidian.md/plugins)
+[![version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/snifer/simple-battle-tracker/releases)
+[![license](https://img.shields.io/badge/license-0--MIT-green.svg)](LICENSE)
+![GitHub Downloads](https://img.shields.io/github/downloads/Snifer/simple-battle-tracker/total?logo)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-ff5f5f?logo=ko-fi&logoColor=white)](https://ko-fi.com/bastiondeldino)
+![Simple Battle Tracker ](./assets/simpletracker.png)
+
 > 📖 **For the English version, please read [README.md](README.md).**
 
 Un rastreador de iniciativa y combate simple y ligero para juegos de rol de mesa (como D&D, Pathfinder, Dragonbane, etc.) directamente dentro de Obsidian.

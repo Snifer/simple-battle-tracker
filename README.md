@@ -1,5 +1,12 @@
 # Simple Battle Tracker
 
+[![Obsidian](https://img.shields.io/badge/Obsidian-Plugin-7C3AED?logo=obsidian)](https://obsidian.md/plugins)
+[![version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/snifer/simple-battle-tracker/releases)
+[![license](https://img.shields.io/badge/license-0--MIT-green.svg)](LICENSE)
+![GitHub Downloads](https://img.shields.io/github/downloads/Snifer/simple-battle-tracker/total?logo)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-ff5f5f?logo=ko-fi&logoColor=white)](https://ko-fi.com/bastiondeldino)
+![Simple Battle Tracker ](./assets/simpletracker.png)
+
 > 📖 **Para la versión en Castellano/Español, lee [README-es.md](README-es.md).**
 
 A simple and lightweight battle tracker for tabletop RPGs (such as D&D, Pathfinder, Dragonbane, etc.) directly inside Obsidian.
