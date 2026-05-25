@@ -1,7 +1,7 @@
 {
-  "name": "battle-tracker",
-  "version": "1.0.0",
-  "description": "Generic battle tracker for tabletop RPGs in Obsidian",
+  "name": "simple-battle-tracker",
+  "version": "1.0.1",
+  "description": "Generic battle tracker for role-playing games. Reads YAML properties from your combatant notes.",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
